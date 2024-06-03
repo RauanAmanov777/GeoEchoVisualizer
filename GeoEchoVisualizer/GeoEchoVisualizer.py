@@ -25,7 +25,7 @@ WINDOWED_FOURIER_TRANSFORM = "Оконное преобразование Фур
 HILBERT_TRANSFORM = "Преобразование Гильберта"
 HILBERT_ENVELOPE_SIGNAL = "Огибающая сигнала Гильберта"
 
-
+# Фильтры
 FILTERS = [
     FILTER_TRACE,
     HORIZONTAL_FILTER,
@@ -33,64 +33,59 @@ FILTERS = [
     LOWPASS_FILTER,
     HIGHPASS_FILTER,
     REVERT_FILTER,
-]
-
-TRANSFORMS = [
     CHOOSE_DAUBECHIES,
     CHOOSE_HAAR,
+]
+
+# Преобразования
+TRANSFORMS = [
     FOURIER_TRANSFORM,
     WINDOWED_FOURIER_TRANSFORM,
     HILBERT_TRANSFORM,
     HILBERT_ENVELOPE_SIGNAL,
 ]
 
-
+# Выбран вейвлет Добеши
 def choose_db():
     global walet
     walet = "db4"
     print("db1")
 
-
+# Выбран вейвлет Хаара
 def choose_haar():
     global walet
     walet = "haar"
     print("haar")
 
-
-def show_radiogram():
-    global signals, index, filter, walet
-
-    signal = signals[index]
-
-    cleared_signal = filter(signal, wavelet=walet)
-
-
+# Класс трасса радарограммы
 class GeoTrack:
+    # Конструктор класса
     def __init__(self, distance, signals):
-        self.distance = distance
-        self.signals = signals
+        self.distance = distance # Дистанция
+        self.signals = signals # Сигналы
         
-    def to_csv_row(self):
+    def to_csv_row(self): # Преобразование атрибутов объекта в строку CSV
         """Convert the object attributes to a CSV row."""
         return [self.distance] + [x for x in self.signals] + [0, 0]
 
 
+# Класс файла радарограммы
 class SignalFile:
     def __init__(self, name, path):
-        self.name = name
-        self.path = path
+        self.name = name # Название
+        self.path = path # Путь к файлу
 
-
+# Функция для сохранения файла с обработанной радарограммой
 def save_file():
     name = simpledialog.askstring("Сохранение", "Введите название трассы:")
     if not name:
         messagebox.showinfo("Info", "No filename provided!")
         return
 
-    # Create the full path for the file
+    # Формирование полного пути к файлу
     filepath = ".\\saved\\" + name + ".csv"
 
-    # Check if the file already exists
+    # Проверка существует ли файл
     if os.path.exists(filepath):
         overwrite = messagebox.askyesno(
             "Подтверждение", "Файл существует. Перезаписать?"
@@ -98,22 +93,21 @@ def save_file():
         if not overwrite:
             return
 
-    # Write some content to the file
+    # Запись данных радарограммы в файл
     try:
         with open(filepath, "w", newline="", encoding="utf-16-le") as file:
             writer = csv.writer(
                 file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
             )
-
-            # Write the data
-            for row in my_data:
+                        
+            for row in copy_list:
                 writer.writerow(row.to_csv_row())
         messagebox.showinfo("Успешно", "Файл успешно сохранён!")
         
         with open("menu.txt", 'a', encoding="utf-8") as file:
             file.write(f"\n{name}\t{filepath}")
             
-        create_gui_with_buttons()
+        read_menu_radarogram_file_paths()
         open_menu.delete(0, 'end')
         for sf in signal_files:
             open_menu.add_command(
@@ -122,9 +116,10 @@ def save_file():
     except Exception as e:
         messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
 
-
+#  Функция для импорта данных из CSV файла
 def import_csv_data(filename):
-    global my_data
+    global my_data, copy_list
+    copy_list.clear()
     my_data.clear()
     with open(filename, encoding="utf-16-le", newline="") as csvfile:
         reader = csv.reader(csvfile, delimiter=",")
@@ -134,14 +129,15 @@ def import_csv_data(filename):
             signals = list(map(float, row[1:-2]))
             obj = GeoTrack(distance, signals)
             my_data.append(obj)
+            copy_list.append(obj)
 
         draw_charts(my_data)
 
 
-def create_gui_with_buttons():
+def read_menu_radarogram_file_paths():
     global signal_files
     signal_files.clear()
-    # Read lines from the file
+    # Чтение путей к файлам радарограмм
     with open("menu.txt", "r", encoding="utf-8") as file:
         lines = file.readlines()
     
@@ -153,15 +149,16 @@ def create_gui_with_buttons():
         signal_files.append(obj)
 
 
+# Рисование графиков
 def draw_charts(data):
-    # Clear previous data
+    # Удаление предыдущих данных
     for widget in frame_unified.winfo_children():
         widget.destroy()
 
     lists_of_numbers = [obj.signals for obj in data]
     matrix_data = np.rot90(np.array(lists_of_numbers), k=-1)
 
-    # Create heatmap
+    # Создание графика профиля радарограммы
     fig1 = Figure(figsize=(5, 4), dpi=100)
     subplot1 = fig1.add_subplot(111)
     subplot1.imshow(
@@ -171,7 +168,7 @@ def draw_charts(data):
         interpolation="none",
     )
 
-    # Create a frame for the charts
+    # Создание frame для графиков
     frame_charts = tk.Frame(frame_unified)
     frame_charts.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -179,26 +176,26 @@ def draw_charts(data):
     chart1.draw()
     chart1.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-    # Create line chart
+    # Создание графика прямой
     fig2 = Figure(figsize=(5, 4), dpi=100)
     subplot2 = fig2.add_subplot(111)
     chart2 = FigureCanvasTkAgg(fig2, master=frame_charts)
     chart2.draw()
     chart2.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-    # Frame for Listbox and Scrollbar
+    # Frame для Listbox и Scrollbar
     frame_list_scroll = tk.Frame(root)
     frame_list_scroll.pack(side=tk.RIGHT, fill=tk.BOTH, expand=False)
 
-    # Frame for Listbox and Scrollbar, within the unified frame
+    # Frame для Listbox и Scrollbar, внутри объединённого frame
     frame_list_scroll = tk.Frame(frame_unified)
     frame_list_scroll.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
 
-    # Creating and placing the Listbox
+    # Создание и размещение Listbox
     listbox = tk.Listbox(frame_list_scroll, height=20, width=20)
     listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-    # Creating Scrollbar
+    # Создание scrollbar
     scrollbar = tk.Scrollbar(frame_list_scroll, orient="vertical")
     scrollbar.config(command=listbox.yview)
     scrollbar.pack(side=tk.LEFT, fill=tk.Y)
@@ -242,66 +239,66 @@ def draw_charts(data):
 
     listbox.bind("<<ListboxSelect>>", update_graph)
 
+# Эта функция будет вызываться при нажатии кнопки "Применить".
+# Проверка состояния применённых фильтров и преобразований, и выполнение соответствующих действий.
+def checkout():
+    global walet, index, copy_list
 
-# This function is called whenever any checkbutton is toggled.
-def checkbutton_handler(item, var):
-    global walet, index
-    if var.get():
-        if item == CHOOSE_DAUBECHIES:
-            choose_db()
-        elif item == CHOOSE_HAAR:
-            choose_haar()
-        elif item == FILTER_TRACE:
-            for trace in my_data:
-                trace.signals = filter_trace(trace.signals, wavelet=walet)
-        elif item == HORIZONTAL_FILTER:
-            for trace in my_data:
-                trace.signals = horizontal_filter(trace.signals, wavelet=walet)
-        elif item == MEDIAN_FILTER:
-            for trace in my_data:
-                trace.signals = median_filter(trace.signals, wavelet=walet)
-        elif item == LOWPASS_FILTER:
-            for trace in my_data:
-                trace.signals = lowpass_filter(trace.signals, wavelet=walet)
-        elif item == HIGHPASS_FILTER:
-            for trace in my_data:
-                trace.signals = highpass_filter(trace.signals, wavelet=walet)
-        elif item == REVERT_FILTER:
-            for trace in my_data:
-                trace.signals = revert_filter(trace.signals, wavelet=walet)
-        elif item == FOURIER_TRANSFORM:
-            for trace in my_data:
-                trace.signals = np.abs(fourier_transform(trace.signals))
-        elif item == WINDOWED_FOURIER_TRANSFORM:
-            for trace in my_data:
-                trace.signals = np.abs(
-                    windowed_fourier_transform(trace.signals, "blackman")
-                )
-        elif item == HILBERT_TRANSFORM:
-            for trace in my_data:
-                trace.signals = np.abs(hilbert_transform(trace.signals))
-        elif item == HILBERT_ENVELOPE_SIGNAL:
-            for trace in my_data:
-                trace.signals = np.abs(hilbert_envelope_signal(trace.signals))
-        draw_charts(my_data)
+    checked_items = []
+    copy_list = copy.deepcopy(my_data)
+    for item, var in zip(FILTERS, check_vars_1):
+        if var.get() == 1:  # Если элемент отмечен
+            if item == CHOOSE_DAUBECHIES:
+                choose_db() # Выбран вейвлет Добеши
+            elif item == CHOOSE_HAAR:
+                choose_haar() # Выбран вейвлет Хаара
+            elif item == FILTER_TRACE: # Вычитание среднего
+                for trace in copy_list:
+                    trace.signals = filter_trace(trace.signals, wavelet=walet)
+            elif item == HORIZONTAL_FILTER: # Горизонтальный фильтр
+                for trace in copy_list:
+                    trace.signals = horizontal_filter(trace.signals, wavelet=walet)
+            elif item == MEDIAN_FILTER: # Медианный фильтр
+                for trace in copy_list:
+                    trace.signals = median_filter(trace.signals, wavelet=walet)
+            elif item == LOWPASS_FILTER: # Режекторная фильтрация
+                for trace in copy_list:
+                    trace.signals = lowpass_filter(trace.signals, wavelet=walet)
+            elif item == HIGHPASS_FILTER: # Полосовая фильтрация
+                for trace in copy_list:
+                    trace.signals = highpass_filter(trace.signals, wavelet=walet)
+            elif item == REVERT_FILTER: # Обратная фильтрация
+                for trace in copy_list:
+                    trace.signals = revert_filter(trace.signals, wavelet=walet)
+                    
+    for item, var in zip(TRANSFORMS, check_vars_2):
+        if var.get() == 1:  # Если элемент отмечен
+            if item == FOURIER_TRANSFORM: # Преобразование Фурье
+                for trace in copy_list:
+                    trace.signals = np.abs(fourier_transform(trace.signals))
+            elif item == WINDOWED_FOURIER_TRANSFORM: # Оконное преобразование Фурье
+                for trace in copy_list:
+                    trace.signals = np.abs(
+                        windowed_fourier_transform(trace.signals, "blackman")
+                    )
+            elif item == HILBERT_TRANSFORM: # Преобразование Гильберта
+                for trace in copy_list:
+                    trace.signals = np.abs(hilbert_transform(trace.signals))
+            elif item == HILBERT_ENVELOPE_SIGNAL: # Огибающая сигнала Гильберта
+                for trace in copy_list:
+                    trace.signals = np.abs(hilbert_envelope_signal(trace.signals))
 
-    # Example action: Show a message box with checked items
-    # if checked_items:
-    #     messagebox.showinfo(
-    #         "Checkout", "Checked out items: " + ", ".join(checked_items)
-    #     )
-    # else:
-    #     messagebox.showinfo("Checkout", "No items were checked out.")
+    draw_charts(copy_list) # Рисование графиков
 
-
-global walet
+global walet # Глобальная переменная для хранения выбранного вейвлета
 walet = "db4"
-my_data = []
+my_data = [] # Список трасс радарограммы
+copy_list = [] # Список преобразованнных трасс радарограммы
 
-signal_files = []
-create_gui_with_buttons()
+signal_files = [] # Список файлов радарограмм
+read_menu_radarogram_file_paths() # Чтение путей к файлам радарограмм
 
-# Set up the main window
+# Настройка главного окна
 root = tk.Tk()
 root.title("GeoEcho Visualizer")
 root.state("zoomed")
@@ -309,56 +306,43 @@ root.state("zoomed")
 frame_unified = tk.Frame(root)
 frame_unified.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-# Create a menu
+# Создание меню
 menu_bar = Menu(root)
 root.config(menu=menu_bar)
 
 filters_menu = tk.Menu(menu_bar, tearoff=0)
 transforms_menu = tk.Menu(menu_bar, tearoff=0)
 
-# Add options to the menu
+# Добавление опций в меню
 file_menu = Menu(filters_menu, tearoff=0)
 open_menu = tk.Menu(file_menu, tearoff=0)
 file_menu.add_cascade(label="Открыть", menu=open_menu)
 
-for sf in signal_files:
+for sf in signal_files: # Добавление файлов радарограмм в меню
     open_menu.add_command(
         label=sf.name, command=lambda path=sf.path: import_csv_data(path)
     )
 
-file_menu.add_command(label="Сохранить", command=save_file)
+file_menu.add_command(label="Сохранить", command=save_file) # Сохранение файла
 file_menu.add_separator()
-file_menu.add_command(label="Выход", command=root.quit)
+file_menu.add_command(label="Выход", command=root.quit) # Выход
 menu_bar.add_cascade(label="Файл", menu=file_menu)
 
-# Add the navigation menu to the main menu bar
+# Добавление навигационного меню в главное меню
 menu_bar.add_cascade(label="Фильтры", menu=filters_menu)
 menu_bar.add_cascade(label="Преобразования", menu=transforms_menu)
+menu_bar.add_command(label="Применить", command=checkout)
 
-# create_gui_with_buttons()
-
-# Initialize BooleanVars for each set of checkbuttons
+# Инициализация BooleanVars для каждого элемента из списков фильтров и преобразований
 check_vars_1 = [tk.IntVar() for _ in FILTERS]
 check_vars_2 = [tk.IntVar() for _ in TRANSFORMS]
 
-# Add checkable items to the first navigation menu
+# Добавление отмечаемых элементов для первого навигационного меню
 for item, var in zip(FILTERS, check_vars_1):
-    filters_menu.add_checkbutton(
-        label=item,
-        variable=var,
-        onvalue=1,
-        offvalue=0,
-        command=lambda item=item, var=var: checkbutton_handler(item, var),
-    )
+    filters_menu.add_checkbutton(label=item, variable=var, onvalue=1, offvalue=0)    
 
-# Add checkable items to the second navigation menu
+# Добавление отмечаемых элементов для второго навигационного меню
 for item, var in zip(TRANSFORMS, check_vars_2):
-    transforms_menu.add_checkbutton(
-        label=item,
-        variable=var,
-        onvalue=1,
-        offvalue=0,
-        command=lambda item=item, var=var: checkbutton_handler(item, var),
-    )
-
+    transforms_menu.add_checkbutton(label=item, variable=var, onvalue=1, offvalue=0)
+    
 root.mainloop()

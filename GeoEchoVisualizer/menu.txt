@@ -1,3 +1,5 @@
 Караганда 2500-5000м	.\originals\0108025_0m_1_02_2.gpr.csv
 Караганда 5000-7500м	.\originals\0108025_0m_1_01.gpr.csv
 Караганда-Астана обраб.	.\saved\Караганда-Астана обраб.csv
+almaty	.\saved\almaty.csv
+shym	.\saved\shym.csv
