@@ -337,11 +337,11 @@ menu_bar.add_command(label="Применить", command=checkout)
 check_vars_1 = [tk.IntVar() for _ in FILTERS]
 check_vars_2 = [tk.IntVar() for _ in TRANSFORMS]
 
-# Добавление отмечаемых элементов для первого навигационного меню
+# Добавление отмечаемых элементов для навигационного меню с фильтрами
 for item, var in zip(FILTERS, check_vars_1):
     filters_menu.add_checkbutton(label=item, variable=var, onvalue=1, offvalue=0)    
 
-# Добавление отмечаемых элементов для второго навигационного меню
+# Добавление отмечаемых элементов для навигационного с преобразованиями
 for item, var in zip(TRANSFORMS, check_vars_2):
     transforms_menu.add_checkbutton(label=item, variable=var, onvalue=1, offvalue=0)
     
